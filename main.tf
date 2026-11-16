@@ -23,7 +23,7 @@ resource "aws_security_group" "my_sg" {
     Name = "my_security_group"
   }
 
-}
+} 
 resource "aws_instance" "my_instance" {
   ami           = data.aws_ami.my_ami.id
   instance_type = "t2.micro"
