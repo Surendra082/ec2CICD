@@ -11,6 +11,8 @@ terraform{
 
 provider "aws"{
     region = "ap-south-1"
+    Access_key = "AKIA5X6Z3J4K7YQ2F5GQ"
+    Secret_key = "your-secret-key"
 
     default_tags {
         tags = {
