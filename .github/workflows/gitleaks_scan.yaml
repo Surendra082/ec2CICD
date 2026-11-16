@@ -1,5 +1,5 @@
 
-name: Gitleaks Secret Scanning
+name: Gitleaks Secret Detection
 
 on:
   push:
@@ -13,20 +13,49 @@ on:
   workflow_dispatch:
 
 jobs:
-  gitleaks-scan:
-    name: Gitleaks Security Scan
+  secret-scanning:
+    name: Scan Secrets and Passwords
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      # Step 1: Checkout repository
+      - name: Checkout Code
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Run Gitleaks Scan
-        uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Step 2: Install Gitleaks
+      - name: Install Gitleaks
+        run: |
+          VERSION=8.30.0
+          curl -sSfL \
+            https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz \
+            -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo install gitleaks /usr/local/bin/gitleaks
+          gitleaks version
 
-      - name: Scan Completed
-        run: echo "Gitleaks scanning completed successfully"
+      # Step 3: Scan repository
+      - name: Scan for Secrets and Passwords
+        run: |
+          echo "Starting Gitleaks security scan..."
+
+          gitleaks git . \
+            --redact \
+            --verbose \
+            --exit-code 1
+
+      # Step 4: Success message
+      - name: Scan Passed
+        if: success()
+        run: |
+          echo "No secrets or passwords detected!"
+          echo "Gitleaks scan successful."
+
+      # Step 5: Failure message
+      - name: Scan Failed
+        if: failure()
+        run: |
+          echo "ERROR: Secrets or passwords detected!"
+          echo "Gitleaks scan failed."
+          exit 1
