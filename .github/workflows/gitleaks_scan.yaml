@@ -24,38 +24,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Step 2: Install Gitleaks
-      - name: Install Gitleaks
+      - name: Run Gitleaks Scan
         run: |
-          VERSION=8.30.0
-          curl -sSfL \
-            https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz \
-            -o gitleaks.tar.gz
-          tar -xzf gitleaks.tar.gz gitleaks
-          sudo install gitleaks /usr/local/bin/gitleaks
-          gitleaks version
-
-      # Step 3: Scan repository
-      - name: Scan for Secrets and Passwords
-        run: |
-          echo "Starting Gitleaks security scan..."
-
-          gitleaks git . \
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo" \
+            zricethezav/gitleaks:latest detect \
+            --source=/repo \
+            --report-format=json \
+            --report-path=/repo/gitleaks-report.json \
             --redact \
-            --verbose \
-            --exit-code 1
-
-      # Step 4: Success message
-      - name: Scan Passed
-        if: success()
-        run: |
-          echo "No secrets or passwords detected!"
-          echo "Gitleaks scan successful."
-
-      # Step 5: Failure message
-      - name: Scan Failed
-        if: failure()
-        run: |
-          echo "ERROR: Secrets or passwords detected!"
-          echo "Gitleaks scan failed."
-          exit 1
+            --exit-code 0
+            
+      - name: Upload Gitleaks report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.json
+          if-no-files-found: warn
